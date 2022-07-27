@@ -41,11 +41,12 @@ const INTERFACE_SUBCLASS = 1; // MTP
 class App extends Component {
   /** @type {Connection} */
   connection;
+  device;
   promiseWithTimeout = promise => {
     let timeoutId;
     const timeoutPromise = new Promise((_, reject) => {
       timeoutId = setTimeout(() => {
-        reject(new Error('Request timed out'));
+        reject(new Error('Lost connection to camera'));
       }, 4000);
     })
     return {
@@ -66,6 +67,9 @@ class App extends Component {
         if (!this.connection) return;
         this.connection.disconnect();
         this.connection = undefined;
+        if (this.device) {
+          this.device.releaseInterface()
+        }
       },
       { once: true }
     );
@@ -76,13 +80,13 @@ class App extends Component {
       this.promiseWithTimeout(this.tryToConnectToCamera())
     } catch (error) {
       this.setState({ type: 'CameraPicker' });
-      console.error(error)
+      console.warn(error)
+      throw 'Error : Lost connection to camera.';
     }
   }
-
   selectDevice = async () => {
     // @ts-ignore
-    await navigator.usb.requestDevice({
+    this.device = await navigator.usb.requestDevice({
       filters: [
         {
           classCode: INTERFACE_CLASS,
