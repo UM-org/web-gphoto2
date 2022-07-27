@@ -1,0 +1,19 @@
+version: '3'
+services:
+
+  gphoto2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: um/web-gphoto2
+    container_name: gphoto2
+    restart: unless-stopped
+    volumes:
+      - ./:/src
+    networks:
+      - app-network
+
+#Docker Networks
+networks:
+  app-network:
+    driver: bridge
