@@ -41,7 +41,18 @@ const INTERFACE_SUBCLASS = 1; // MTP
 class App extends Component {
   /** @type {Connection} */
   connection;
-
+  promiseWithTimeout = promise => {
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error('Request timed out'));
+      }, 4000);
+    })
+    return {
+      promiseOrTimeout: Promise.race([promise, timeoutPromise]),
+      timeoutId,
+    };
+  };
   componentDidMount() {
     addEventListener('error', ({ message }) =>
       this.setState({
@@ -51,7 +62,7 @@ class App extends Component {
     );
     addEventListener(
       'beforeunload',
-      () => {
+      (e) => {
         if (!this.connection) return;
         this.connection.disconnect();
         this.connection = undefined;
@@ -61,7 +72,12 @@ class App extends Component {
     // Try to connect to camera at startup.
     // If none is found among saved connections, it will fallback to a picker.
     this.setState({ type: 'Status', message: '⌛ Loading...' });
-    this.tryToConnectToCamera();
+    try {
+      this.promiseWithTimeout(this.tryToConnectToCamera())
+    } catch (error) {
+      this.setState({ type: 'CameraPicker' });
+      console.error(error)
+    }
   }
 
   selectDevice = async () => {
@@ -77,7 +93,6 @@ class App extends Component {
     this.setState({ type: 'Status', message: '⌛ Connecting...' });
     await this.tryToConnectToCamera();
   };
-
   async tryToConnectToCamera() {
     try {
       this.connection = await connect();

@@ -32,7 +32,6 @@ export function rethrowIfCritical(err) {
 
 export async function connect() {
   const Module = await ModulePromise;
-
   let context = await new Module.Context();
   let supportedOps = await context.supportedOps();
 
